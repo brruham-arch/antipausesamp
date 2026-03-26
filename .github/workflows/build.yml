@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup NDK
         uses: nttld/setup-ndk@v1
@@ -21,7 +21,7 @@ jobs:
             NDK_APPLICATION_MK=jni/Application.mk
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: libantipause
           path: libs/armeabi-v7a/libantipause.so
