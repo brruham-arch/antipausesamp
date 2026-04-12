@@ -1,0 +1,65 @@
+name: Build libantipause.so
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK r25c
+        run: |
+          wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+          unzip -q android-ndk-r25c-linux.zip
+          echo "NDK_PATH=$(pwd)/android-ndk-r25c" >> $GITHUB_ENV
+
+      - name: Build with ndk-build
+        run: |
+          $NDK_PATH/ndk-build \
+            NDK_PROJECT_PATH=. \
+            NDK_APPLICATION_MK=jni/Application.mk \
+            APP_BUILD_SCRIPT=jni/Android.mk \
+            NDK_LIBS_OUT=./libs \
+            NDK_OUT=./obj \
+            -j$(nproc)
+
+      - name: Verify output
+        run: |
+          echo "=== Build output ==="
+          find libs/ -name "*.so" -exec ls -lh {} \;
+          file libs/armeabi-v7a/libantipause.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libantipause-armeabi-v7a
+          path: libs/armeabi-v7a/libantipause.so
+          if-no-files-found: error
+
+      - name: Release (pada push ke main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "libantipause v1.0 build-${{ github.run_number }}"
+          files: libs/armeabi-v7a/libantipause.so
+          body: |
+            ## libantipause.so — Auto Build
+
+            **4-Layer Anti-Pause SA-MP Mobile**
+            - L1: Inline patch BX LR @ SetAndroidPaused
+            - L2: DobbyHook SetAndroidPaused
+            - L3: Native thread loop (IsAndroidPaused / WasAndroidPaused / CTimer::m_UserPause)
+            - L4: Foreground Service JNI (anti MIUI SIGSTOP)
+
+            **Install:** Copy ke `/storage/emulated/0/Android/data/com.sampmobilerp.game/mods/`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
