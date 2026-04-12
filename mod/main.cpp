@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <android/log.h>
+#include <stdlib.h>
 
 #define LOG_TAG "libantipause"
 #define LOGFILE "/storage/emulated/0/antipause_log.txt"
